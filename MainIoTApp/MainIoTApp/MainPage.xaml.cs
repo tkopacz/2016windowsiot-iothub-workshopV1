@@ -34,6 +34,9 @@ namespace MainIoTApp
 }
 */
 
+/*
+    Messages for receiving
+*/
 
 namespace MainIoTApp
 {
@@ -91,25 +94,28 @@ namespace MainIoTApp
         /// </summary>
         int m_msgCount = 0;
 
+        int MaxMsgCount = 1000;
+
         private async void setup()
         {
             try
             {
-                //0. IoTHub client
+                //0.IoTHub client
                 m_clt = DeviceClient.CreateFromConnectionString(TKConnectionString, TransportType.Http1);
                 await m_clt.SendEventAsync(new Message(new byte[] { 1, 2, 3 }));
-                Task.Run(()=>ReceiveDataFromAzure()); //Loop. Need to Subscribe to MQTT in this case !
+                Task.Run(() => ReceiveDataFromAzure()); //Loop. Need to Subscribe to MQTT in this case !
 
                 //0. MQQT for IoT Hub, uPLibrary.Networking.M2Mqtt
                 m_mqtt = new MqttClient(TKConnectionMqtt, 8883, true, MqttSslProtocols.TLSv1_2);
                 //Device must be registered!
                 m_mqtt.Connect(DeviceId, TKConnectionMqttUsername, TKConnectionMqttPassword);
                 if (m_mqtt.IsConnected == false) throw new ArgumentException("Bad username/password for MQTT");
-                m_mqtt.Publish(TKMqttTopic, new byte[] { 64, 65, 66 });
-                m_mqtt.Publish("ABC", new byte[] { 67, 68, 69 });
                 //Hack: Obligatory for HTTP1 to work :)
-                m_mqtt.Subscribe(new string[] { TKMqttTopic }, new byte[] { 0 /*MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE, MqttMsgBase.QOS_LEVEL_AT_MOST_ONCE*/ });
-                    
+                m_mqtt.Subscribe(new string[] { TKMqttTopicReceive }, new byte[] { 0 });
+
+                m_mqtt.Publish(TKMqttTopicSend, new byte[] { 64, 65, 66 });
+                m_mqtt.Publish("ABC", new byte[] { 67, 68, 69 });
+
 
                 //0. Cache for message
                 m_mSPI = new MSPI();
@@ -163,9 +169,9 @@ namespace MainIoTApp
 
         private void M_tSPI_Tick(object sender, object e)
         {
-            if (m_msgSpiCount >= 100)
+            if (m_msgSpiCount >= MaxMsgCount && MaxMsgCount != -1)
             {
-                //No more than 100 messages / run
+                //No more than MaxMsgCount messages / run
                 m_tSPI.Stop(); return;
             }
             m_mSPI.Potentiometer1 = m_adcChannel[0].ReadRatio();
@@ -178,7 +184,7 @@ namespace MainIoTApp
                 if (m_mqtt != null)
                 {
                     //Publish to internal queue; then - background process send messages to IoT Hub 
-                    m_mqtt.Publish(TKMqttTopic, System.Text.Encoding.UTF8.GetBytes(obj));
+                    m_mqtt.Publish(TKMqttTopicSend, System.Text.Encoding.UTF8.GetBytes(obj));
                     m_msgSpiCount++;
                 }
             }
@@ -190,9 +196,9 @@ namespace MainIoTApp
         }
         private async void M_t_Tick(object sender, object e)
         {
-            if (m_msgCount >= 100)
+            if (m_msgCount >= MaxMsgCount && MaxMsgCount != -1)
             {
-                //No more than 100 messages / run
+                //No more than MaxMsgCount messages / run
                 m_t.Stop(); return;
             }
             MAll m = new MAll();
@@ -219,9 +225,11 @@ namespace MainIoTApp
             m.Dt = DateTime.UtcNow;
             var obj = JsonConvert.SerializeObject(m);
             try
-            {
-                await m_clt.SendEventAsync(new Message(System.Text.Encoding.UTF8.GetBytes(obj)));
-                m_msgCount++;
+            {   if (m_clt != null)
+                {
+                    await m_clt.SendEventAsync(new Message(System.Text.Encoding.UTF8.GetBytes(obj)));
+                    m_msgCount++;
+                }
                 txtState.Text = obj + $", MSG:{m_msgCount}, MSGSPI:{m_msgSpiCount}";
             }
             catch (Exception ex)
@@ -267,67 +275,69 @@ namespace MainIoTApp
 
             Message receivedMessage;
             string messageData;
-
-            while (true)
+            if (m_clt != null)
             {
-                try
+                while (true)
                 {
-                    receivedMessage = await m_clt.ReceiveAsync();
-
-                    if (receivedMessage != null)
+                    try
                     {
-                        messageData = System.Text.Encoding.ASCII.GetString(receivedMessage.GetBytes());
-                        //Wykonanie polecenia
-                        if (messageData.Length >= 2)
+                        receivedMessage = await m_clt.ReceiveAsync();
+
+                        if (receivedMessage != null)
                         {
-                            await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
+                            messageData = System.Text.Encoding.ASCII.GetString(receivedMessage.GetBytes());
+                            //Wykonanie polecenia
+                            if (messageData.Length >= 2)
                             {
-                                double val;
-                                switch (messageData[0])
+                                await this.Dispatcher.RunAsync(Windows.UI.Core.CoreDispatcherPriority.Normal, () =>
                                 {
-                                    case 'L':
+                                    double val;
+                                    switch (messageData[0])
+                                    {
+                                        case 'L':
                                         //Light
                                         if (messageData[1] == '0')
-                                            m_blinkValue = GpioPinValue.High;
-                                        else
-                                            m_blinkValue = GpioPinValue.Low;
-                                        m_blink.Write(m_blinkValue);
-                                        break;
-                                    case 'A':
+                                                m_blinkValue = GpioPinValue.High;
+                                            else
+                                                m_blinkValue = GpioPinValue.Low;
+                                            m_blink.Write(m_blinkValue);
+                                            break;
+                                        case 'A':
                                         //All messages - interval
-                                        if (double.TryParse(messageData.Substring(1),out val))
-                                        {
-                                            txtAll.Text = val.ToString();
-                                        }
-                                        break;
-                                    case 'S':
+                                        if (double.TryParse(messageData.Substring(1), out val))
+                                            {
+                                                txtAll.Text = val.ToString();
+                                            }
+                                            break;
+                                        case 'S':
                                         //SPI messages - interval
                                         if (double.TryParse(messageData.Substring(1), out val))
-                                        {
-                                            txtSPI.Text = val.ToString();
-                                        }
-                                        break;
-                                    case 'O':
+                                            {
+                                                txtSPI.Text = val.ToString();
+                                            }
+                                            break;
+                                        case 'O':
                                         //On / Off
                                         if (messageData[1] == '0')
-                                            tgSend.IsOn = false;
-                                        else
-                                            tgSend.IsOn = true;
-                                        break;
-                                    default:
-                                        break;
-                                }
-                            });
+                                                tgSend.IsOn = false;
+                                            else
+                                                tgSend.IsOn = true;
+                                            break;
+                                        default:
+                                            break;
+                                    }
+                                });
+                            }
+                            //await m_clt.RejectAsync(receivedMessage);
+                            //await m_clt.AbandonAsync(receivedMessage); - reject, will be redelivered
+                            //Confirm
+                            await m_clt.CompleteAsync(receivedMessage); //potwierdza odebranie
                         }
-                        //await m_deviceClient.RejectAsync(receivedMessage);
-                        //await m_deviceClient.AbandonAsync(receivedMessage); - odrzuca, ale komunikat wraca
-                        //Potwierdzenie wykonania
-                        await m_clt.CompleteAsync(receivedMessage); //potwierdza odebranie
                     }
-                }
-                catch (Exception ex)
-                {
-                    txtState.Text = ex.ToString();
+                    catch (Exception ex)
+                    {
+                        txtState.Text = ex.ToString();
+                    }
                 }
             }
         }
