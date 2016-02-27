@@ -10,6 +10,8 @@ using Windows.Devices.Gpio;
 using Windows.Devices.I2c;
 using Windows.UI;
 
+//Copied from: https://raw.githubusercontent.com/ms-iot/adafruitsample/master/Lesson_205/FullSolution/TCS34725.cs
+
 namespace Test4_TCS34725
 
 {
