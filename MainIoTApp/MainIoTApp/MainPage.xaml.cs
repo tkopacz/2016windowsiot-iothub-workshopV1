@@ -92,16 +92,17 @@ namespace MainIoTApp
         private async void setup()
         {
             try {
-                //0. IoTHub
+                //0. IoTHub client
                 m_clt = DeviceClient.CreateFromConnectionString(TKConnectionString, TransportType.Http1);
                 await m_clt.SendEventAsync(new Message(new byte[] { 1, 2, 3 }));
-                //0. MQQT for IoT Hub
+                //0. MQQT for IoT Hub, uPLibrary.Networking.M2Mqtt
                 m_mqtt = new MqttClient(TKConnectionMqtt, 8883,true,MqttSslProtocols.TLSv1_2);
                 //Device must be registered!
                 m_mqtt.Connect(DeviceId, TKConnectionMqttUsername, TKConnectionMqttPassword);
                 if (m_mqtt.IsConnected == false) throw new ArgumentException("Bad username/password for MQTT");
                 m_mqtt.Publish(TKMqttTopic, new byte[] { 64, 65, 66 });
                 m_mqtt.Publish("ABC", new byte[] { 67, 68, 69 });
+                
                 //0. Cache for message
                 m_mSPI = new MSPI();
                 m_mSPI.DeviceName = DeviceId;
@@ -131,16 +132,17 @@ namespace MainIoTApp
                 await m_tcs.Initialize();
 
 
-                //Use Client
                 m_t = new DispatcherTimer();
                 m_t.Interval = TimeSpan.FromMilliseconds(5000); 
                 m_t.Tick += M_t_Tick;
-                m_t.Start();
 
                 m_tSPI = new DispatcherTimer();
                 m_tSPI.Interval = TimeSpan.FromMilliseconds(1000); //Caution - we have 8 000 messages / day. So - LIMIT RATE
                 m_tSPI.Tick += M_tSPI_Tick;
-                m_tSPI.Start();
+
+                txtAll.IsEnabled = txtSPI.IsEnabled = tgSend.IsEnabled = true;
+                tgSend.IsOn = true;
+
 
             }
             catch (Exception ex)
