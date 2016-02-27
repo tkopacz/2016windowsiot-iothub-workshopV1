@@ -103,18 +103,17 @@ namespace MainIoTApp
                 //0.IoTHub client
                 m_clt = DeviceClient.CreateFromConnectionString(TKConnectionString, TransportType.Http1);
                 await m_clt.SendEventAsync(new Message(new byte[] { 1, 2, 3 }));
-                Task.Run(() => ReceiveDataFromAzure()); //Loop. Need to Subscribe to MQTT in this case !
+                Task.Run(() => ReceiveDataFromAzure()); //Loop. Will not work if used MQQT
 
-                //0. MQQT for IoT Hub, uPLibrary.Networking.M2Mqtt
-                m_mqtt = new MqttClient(TKConnectionMqtt, 8883, true, MqttSslProtocols.TLSv1_2);
-                //Device must be registered!
-                m_mqtt.Connect(DeviceId, TKConnectionMqttUsername, TKConnectionMqttPassword);
-                if (m_mqtt.IsConnected == false) throw new ArgumentException("Bad username/password for MQTT");
-                //Hack: Obligatory for HTTP1 to work :)
-                m_mqtt.Subscribe(new string[] { TKMqttTopicReceive }, new byte[] { 0 });
-
-                m_mqtt.Publish(TKMqttTopicSend, new byte[] { 64, 65, 66 });
-                m_mqtt.Publish("ABC", new byte[] { 67, 68, 69 });
+                // OR: (unable; even using hack; use both Http1 and MQTT)
+                ////0. MQQT for IoT Hub, uPLibrary.Networking.M2Mqtt
+                //m_mqtt = new MqttClient(TKConnectionMqtt, 8883, true, MqttSslProtocols.TLSv1_2);
+                ////Device must be registered!
+                //m_mqtt.Connect(DeviceId, TKConnectionMqttUsername, TKConnectionMqttPassword);
+                //if (m_mqtt.IsConnected == false) throw new ArgumentException("Bad username/password for MQTT");
+                ////TKMqttTopicReceive
+                //m_mqtt.Publish(TKMqttTopicSend, new byte[] { 64, 65, 66 });
+                //m_mqtt.Publish("ABC", new byte[] { 67, 68, 69 });
 
 
                 //0. Cache for message
@@ -167,7 +166,7 @@ namespace MainIoTApp
 
         }
 
-        private void M_tSPI_Tick(object sender, object e)
+        private async void M_tSPI_Tick(object sender, object e)
         {
             if (m_msgSpiCount >= MaxMsgCount && MaxMsgCount != -1)
             {
@@ -185,6 +184,10 @@ namespace MainIoTApp
                 {
                     //Publish to internal queue; then - background process send messages to IoT Hub 
                     m_mqtt.Publish(TKMqttTopicSend, System.Text.Encoding.UTF8.GetBytes(obj));
+                    m_msgSpiCount++;
+                } else if (m_clt!=null)
+                {
+                    await m_clt.SendEventAsync(new Message(System.Text.Encoding.UTF8.GetBytes(obj)));
                     m_msgSpiCount++;
                 }
             }
