@@ -1,9 +1,9 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <Package xmlns="http://schemas.microsoft.com/appx/manifest/foundation/windows10" xmlns:mp="http://schemas.microsoft.com/appx/2014/phone/manifest" xmlns:uap="http://schemas.microsoft.com/appx/manifest/uap/windows10" IgnorableNamespaces="uap mp">
-  <Identity Name="MainIoTApp" Publisher="CN=tkopacz" Version="1.0.0.0" />
+  <Identity Name="MainIoTAppMqtt" Publisher="CN=tkopacz" Version="1.0.0.0" />
   <mp:PhoneIdentity PhoneProductId="0e3496f5-76a0-422a-abf5-30089385da3c" PhonePublisherId="00000000-0000-0000-0000-000000000000" />
   <Properties>
-    <DisplayName>MainIoTApp</DisplayName>
+    <DisplayName>MainIoTAppMqtt</DisplayName>
     <PublisherDisplayName>tkopacz</PublisherDisplayName>
     <Logo>Assets\StoreLogo.png</Logo>
   </Properties>
