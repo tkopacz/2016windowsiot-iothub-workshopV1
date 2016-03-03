@@ -4,6 +4,8 @@ using Newtonsoft.Json;
 using System;
 using System.Diagnostics;
 using System.Threading.Tasks;
+using uPLibrary.Networking.M2Mqtt;
+using uPLibrary.Networking.M2Mqtt.Messages;
 using Windows.Devices.Adc;
 using Windows.Devices.Gpio;
 using Windows.UI.Xaml;
@@ -75,6 +77,10 @@ namespace MainIoTApp
         /// </summary>
         DeviceClient m_clt;
         /// <summary>
+        /// Client for MqTT
+        /// </summary>
+        MqttClient m_mqtt;
+        /// <summary>
         /// Cache for message with ADC info
         /// </summary>
         MSPI m_mSPI;
@@ -97,7 +103,18 @@ namespace MainIoTApp
                 //0.IoTHub client
                 m_clt = DeviceClient.CreateFromConnectionString(TKConnectionString, TransportType.Http1);
                 await m_clt.SendEventAsync(new Message(new byte[] { 1, 2, 3 }));
-                Task.Run(() => ReceiveDataFromAzure()); //Loop. 
+                Task.Run(() => ReceiveDataFromAzure()); //Loop. Will not work if used MQQT
+
+                // OR: (unable; even using hack; use both Http1 and MQTT)
+                ////0. MQQT for IoT Hub, uPLibrary.Networking.M2Mqtt
+                //m_mqtt = new MqttClient(TKConnectionMqtt, 8883, true, MqttSslProtocols.TLSv1_2);
+                ////Device must be registered!
+                //m_mqtt.Connect(DeviceId, TKConnectionMqttUsername, TKConnectionMqttPassword);
+                //if (m_mqtt.IsConnected == false) throw new ArgumentException("Bad username/password for MQTT");
+                ////TKMqttTopicReceive
+                //m_mqtt.Publish(TKMqttTopicSend, new byte[] { 64, 65, 66 });
+                //m_mqtt.Publish("ABC", new byte[] { 67, 68, 69 });
+
 
                 //0. Cache for message
                 m_mSPI = new MSPI();
@@ -163,7 +180,12 @@ namespace MainIoTApp
             var obj = JsonConvert.SerializeObject(m_mSPI);
             try
             {
-                if (m_clt!=null)
+                if (m_mqtt != null)
+                {
+                    //Publish to internal queue; then - background process send messages to IoT Hub 
+                    m_mqtt.Publish(TKMqttTopicSend, System.Text.Encoding.UTF8.GetBytes(obj));
+                    m_msgSpiCount++;
+                } else if (m_clt!=null)
                 {
                     await m_clt.SendEventAsync(new Message(System.Text.Encoding.UTF8.GetBytes(obj)));
                     m_msgSpiCount++;
@@ -243,7 +265,7 @@ namespace MainIoTApp
         }
 
         private void txtAll_TextChanged(object sender, TextChangedEventArgs e)
-        {   
+        {
             double val;
             if (double.TryParse(txtAll.Text, out val) && val > 0)
             {
