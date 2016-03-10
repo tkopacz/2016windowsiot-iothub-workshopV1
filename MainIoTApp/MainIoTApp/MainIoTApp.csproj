@@ -92,9 +92,6 @@
     <None Include="project.json" />
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="..\..\..\PRIVATE_PASSWORDS\MainIotApp\mainIothubex.cs">
-      <Link>mainIothubex.cs</Link>
-    </Compile>
     <Compile Include="App.xaml.cs">
       <DependentUpon>App.xaml</DependentUpon>
     </Compile>

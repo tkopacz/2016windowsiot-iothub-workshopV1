@@ -12,33 +12,26 @@ using Windows.UI.Xaml.Controls;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
-/*
-mainIothubex.cs, not in repo : 
+
 namespace MainIoTApp
 {
     /// <summary>
     /// Additional information - passwords etc
+    /// Enter correct values!: 
     /// </summary>
+
     public sealed partial class MainPage : Page
     {
-        const string TKConnectionString = "HostName=pltkdpepliot2016.azure-devices.net;DeviceId=D01;SharedAccessKey=<enter>";
         const string TKConnectionMqtt = "pltkdpepliot2016.azure-devices.net";
         const string TKConnectionMqttUsername = "pltkdpepliot2016.azure-devices.net/D01";
         //SAS:
+
         const string TKConnectionMqttPassword = "SharedAccessSignature sr=pltkdpepliot2016.azure-devices.net&sig=<enter>";
         const string TKMqttDeviceId = "D01";
-        const string TKMqttTopic = "devices/"+ TKMqttDeviceId + "/messages/events";
+        const string TKMqttTopicSend = "devices/" + TKMqttDeviceId + "/messages/events";
 
     }
-}
-*/
 
-/*
-    Messages for receiving
-*/
-
-namespace MainIoTApp
-{
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
@@ -99,12 +92,12 @@ namespace MainIoTApp
                 //0. MQQT for IoT Hub, uPLibrary.Networking.M2Mqtt
                 m_mqtt = new MqttClient(TKConnectionMqtt, 8883, true, MqttSslProtocols.TLSv1_2);
                 //Device must be registered!
-                m_mqtt.Connect(DeviceId, TKConnectionMqttUsername, TKConnectionMqttPassword);
+                m_mqtt.Connect(TKMqttDeviceId, TKConnectionMqttUsername, TKConnectionMqttPassword);
                 if (m_mqtt.IsConnected == false) throw new ArgumentException("Bad username/password for MQTT");
 
                 //0. Cache for message
                 m_mSPI = new MSPI();
-                m_mSPI.DeviceName = DeviceId;
+                m_mSPI.DeviceName = TKMqttDeviceId;
                 m_mSPI.MsgType = "SPI";
 
                 //1. LED
@@ -187,7 +180,7 @@ namespace MainIoTApp
                 m_t.Stop(); return;
             }
             MAll m = new MAll();
-            m.DeviceName = DeviceId;
+            m.DeviceName = TKMqttDeviceId;
             m.MsgType = "ALL";
 
             m.Altitude = await m_bmp280.ReadAltitudeAsync(seaLevelPressure);

@@ -11,26 +11,6 @@ using Windows.UI.Xaml.Controls;
 
 // The Blank Page item template is documented at http://go.microsoft.com/fwlink/?LinkId=402352&clcid=0x409
 
-/*
-mainIothubex.cs, not in repo : 
-namespace MainIoTApp
-{
-    /// <summary>
-    /// Additional information - passwords etc
-    /// </summary>
-    public sealed partial class MainPage : Page
-    {
-        const string TKConnectionString = "HostName=pltkdpepliot2016.azure-devices.net;DeviceId=D01;SharedAccessKey=<enter>";
-        const string TKConnectionMqtt = "pltkdpepliot2016.azure-devices.net";
-        const string TKConnectionMqttUsername = "pltkdpepliot2016.azure-devices.net/D01";
-        //SAS:
-        const string TKConnectionMqttPassword = "SharedAccessSignature sr=pltkdpepliot2016.azure-devices.net&sig=<enter>";
-        const string TKMqttDeviceId = "D01";
-        const string TKMqttTopic = "devices/"+ TKMqttDeviceId + "/messages/events";
-
-    }
-}
-*/
 
 /*
     Messages for receiving
@@ -38,6 +18,17 @@ namespace MainIoTApp
 
 namespace MainIoTApp
 {
+    /// <summary>
+    /// Additional information - passwords etc
+    /// Enter correct values!: 
+    /// </summary>
+
+    public sealed partial class MainPage : Page
+    {
+        const string TKConnectionString = "HostName=pltkdpepliot2016.azure-devices.net;DeviceId=D01;SharedAccessKey=<enter>";
+        const string DeviceId = "D01";
+    }
+
     /// <summary>
     /// An empty page that can be used on its own or navigated to within a Frame.
     /// </summary>
