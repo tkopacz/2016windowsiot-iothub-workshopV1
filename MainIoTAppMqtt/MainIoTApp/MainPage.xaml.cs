@@ -22,12 +22,12 @@ namespace MainIoTApp
 
     public sealed partial class MainPage : Page
     {
+        const string TKMqttDeviceId = "D01";
         const string TKConnectionMqtt = "pltkdpepliot2016.azure-devices.net";
-        const string TKConnectionMqttUsername = "pltkdpepliot2016.azure-devices.net/D01";
+        const string TKConnectionMqttUsername = "pltkdpepliot2016.azure-devices.net/" + TKMqttDeviceId;
         //SAS:
 
         const string TKConnectionMqttPassword = "SharedAccessSignature sr=pltkdpepliot2016.azure-devices.net&sig=<enter>";
-        const string TKMqttDeviceId = "D01";
         const string TKMqttTopicSend = "devices/" + TKMqttDeviceId + "/messages/events";
 
     }
